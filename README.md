@@ -1,101 +1,46 @@
-# FNOS Docker 延迟启动管理脚本
+# scripts
 
-为飞牛私有云（FNOS）设计的 Docker 容器延迟启动管理工具。通过交互式菜单，生成启动脚本并注册为 systemd 服务，实现 **开机后按指定顺序、间隔一定时间逐个启动 Docker 容器**，避免系统刚启动时因依赖未就绪导致的启动失败。
+我个人在用的运维脚本仓库。目前主要面向飞牛 FNOS（Debian + systemd）和普通 Linux 服务器。
 
-## 功能特性
+每条脚本都是自包含的单文件，直接 `curl` 下来就能跑，不需要 clone、没有依赖安装步骤。
 
-- 交互式菜单：创建 / 删除延迟启动服务、查看启动日志
-- 自定义容器启动顺序与编号选择（支持单编号、区间 `1-5`、全选 `a`，自动去重）
-- 可配置「系统启动后首个容器的等待时间」与「容器之间的启动间隔」
-- 生成前展示配置摘要并二次确认，避免误操作
-- 自动等待 Docker 守护进程就绪（最多约 2.5 分钟），超时则记录失败并退出
-- 仅启动未运行的容器，已运行的会跳过
-- 所有启动动作写入日志 `/var/log/start_docker.log`，便于排查
+## 脚本索引
 
-## 适用环境
+| 脚本 | 作用 | 运行方式 | 文档 |
+| --- | --- | --- | --- |
+| [docker-delay-for-fnos.sh](scripts/docker-delay-for-fnos.sh) | 让 FNOS 的 Docker 容器在开机后按顺序、隔指定秒数逐个启动，避免依赖未就绪导致启动失败；交互式生成启动脚本并注册 systemd 服务 | `sudo bash`，需 root | [文档](docs/docker-delay-for-fnos.md) |
 
-- 系统：飞牛 FNOS（基于 Linux + systemd）
-- 依赖：`docker`、`systemctl`、bash 4.0+
-- 权限：需以 root 运行
+## 通用运行方式
 
-## 快速开始（在线安装）
-
-本脚本是交互式的（需要键盘输入），请先下载到本地再用 `sudo` 运行，以便菜单能正常读取输入。
-
-> ⚠️ 不要使用 `sudo bash <(curl ...)`（进程替换 + sudo）：进程替换生成的 `/dev/fd/63` 文件描述符在 `sudo` 切换用户后无法被新进程继承，会报错 `No such file or directory`。
-> ⚠️ 也不要用 `curl ... | sudo bash` 管道：脚本内的 `read` 会去读管道（curl 结束后为 EOF），导致菜单无法交互。
-
-方式一（推荐，两行）：
+非交互脚本可以直接管道执行：
 
 ```bash
-curl -fsSL -o /tmp/docker_delay_for_fnos.sh https://raw.githubusercontent.com/thintsing/docker-delay-for-fnos/master/docker_delay_for_fnos.sh
-sudo bash /tmp/docker_delay_for_fnos.sh
+curl -fsSL https://raw.githubusercontent.com/thintsing/scripts/master/scripts/<脚本名>.sh | bash
 ```
 
-方式二（一行，用 `bash -c` 传入脚本文本，stdin 仍指向终端，菜单可交互）：
+**交互式脚本（需要读键盘输入的，比如上面那个）必须先下载到文件再运行**，否则脚本里的 `read` 会去读管道，curl 一结束就是 EOF，菜单根本弹不出来：
 
 ```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/thintsing/docker-delay-for-fnos/master/docker_delay_for_fnos.sh)"
+curl -fsSL -o /tmp/<脚本名>.sh https://raw.githubusercontent.com/thintsing/scripts/master/scripts/<脚本名>.sh
+sudo bash /tmp/<脚本名>.sh
 ```
 
-使用 wget 时，把下载那一步替换为：
+同理，`sudo bash <(curl ...)` 也不行——进程替换产生的 `/dev/fd/63` 文件描述符在 `sudo` 切换用户后不会被新进程继承，会报 `No such file or directory`。
 
-```bash
-wget -qO /tmp/docker_delay_for_fnos.sh https://raw.githubusercontent.com/thintsing/docker-delay-for-fnos/master/docker_delay_for_fnos.sh
-sudo bash /tmp/docker_delay_for_fnos.sh
-```
+## 仓库约定
 
-## 使用方法
+- **目录**：脚本一律放在 `scripts/`，一层平铺，文件名用 kebab-case + `.sh`。详细说明放 `docs/<脚本名>.md`，并在上面的索引表里加一行。
+- **行尾**：全部 LF，由 `.gitattributes` 强制。Windows 上 `core.autocrlf=true` 会把工作区文件转成 CRLF，如果不锁死，哪天在无 autocrlf 的环境里提交一次，`#!/bin/bash\r` 就能让脚本在 Linux 上直接跑不起来。
+- **权限**：需要 root 的脚本自己检查 `EUID` 并报错退出，不假设调用者已经 `sudo`。
+- **自包含**：不引入仓库内的相对路径依赖，跨目录的 `source` 一律不用，这样 `curl` 单文件才真的能用。
 
-1. 将脚本上传到 FNOS 并赋予执行权限：
+## 添加一条新脚本
 
-   ```bash
-   chmod +x docker_delay_for_fnos.sh
-   ```
+1. `scripts/<名字>.sh` 写脚本，头部注释说明用途、适用环境、是否需要 root。
+2. `docs/<名字>.md` 写用法，包含上面那种可直接复制的 `curl` 命令。
+3. 更新本文件的索引表。
+4. 提交前跑一次 `bash -n scripts/<名字>.sh` 做语法检查。
 
-2. 以 root 身份运行：
+## 许可
 
-   ```bash
-   sudo ./docker_delay_for_fnos.sh
-   ```
-
-3. 按菜单提示操作：
-   - `1` 创建延迟启动服务：依次选择脚本保存目录、要启动的容器、等待秒数与间隔秒数，并在生成前**确认配置**，最后选择是否注册 systemd 服务。
-     - 容器选择支持：单个编号 `1 3 5`、区间 `1-5`、全选 `a`（或 `*` / `all`）；重复选择会自动去重。
-   - `2` 删除延迟启动服务：同时清理生成的启动脚本（孤儿文件不再残留）。
-   - `3` 查看最近 100 行启动日志。
-   - `4` 查看当前配置：列出已注册服务计划开机启动的容器顺序。
-   - `5` 退出。
-
-4. 启用后，服务会随系统开机自动运行。可用以下命令检查状态：
-
-   ```bash
-   systemctl status start_docker.service
-   journalctl -u start_docker.service
-   ```
-
-## 工作原理
-
-- 脚本根据用户选择，在指定目录生成 `start_docker.sh` 启动脚本（默认 `/vol1/1000/config/start_docker.sh`）。
-- 该脚本会先 `sleep` 等待系统稳定，再轮询 `systemctl is-active docker`，待 Docker 就绪后按用户设定的顺序与间隔逐个 `docker start`。
-- 同时注册 `start_docker.service`（`Type=oneshot`，`After=docker.service network-online.target`），并通过 `systemctl enable` 设为开机自启。
-
-## 日志
-
-启动过程的所有记录保存在：
-
-```
-/var/log/start_docker.log
-```
-
-可通过菜单 `3` 或 `tail -100 /var/log/start_docker.log` 查看。
-
-## 注意事项
-
-- 容器名称若包含空格，脚本已做引号处理，可正常启动。
-- 删除服务时会一并删除生成的启动脚本；若仅想保留脚本而移除服务，请谨慎选择。
-- 重复创建同名服务/脚本时会提示是否覆盖，避免误覆盖。
-
-## 许可证
-
-本仓库脚本仅供学习与交流使用，使用风险自负。
+脚本仅供学习与自用，使用风险自负。生产环境请先在测试机上验证。

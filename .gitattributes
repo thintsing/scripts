@@ -1,0 +1,12 @@
+# 行尾统一为 LF。
+# 本仓库的 .sh 会在 Linux（飞牛 FNOS）上直接运行，Windows 端 core.autocrlf=true
+# 会把工作区变成 CRLF，一旦在无 autocrlf 的环境提交，`#!/bin/bash\r` 会让脚本无法执行。
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+
+*.png binary
+*.jpg binary
+*.gz binary
