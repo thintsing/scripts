@@ -2,7 +2,7 @@
 
 为飞牛私有云（FNOS）设计的 Docker 容器延迟启动管理工具。通过交互式菜单，生成启动脚本并注册为 systemd 服务，实现 **开机后按指定顺序、间隔一定时间逐个启动 Docker 容器**，避免系统刚启动时因依赖未就绪导致的启动失败。
 
-对应脚本：[`scripts/docker-delay-for-fnos.sh`](../scripts/docker-delay-for-fnos.sh)
+对应脚本：[`scripts/docker/docker-delay-for-fnos.sh`](../../scripts/docker/docker-delay-for-fnos.sh)
 
 ## 功能特性
 
@@ -27,20 +27,20 @@
 方式一（推荐，两行）：
 
 ```bash
-curl -fsSL -o /tmp/docker-delay-for-fnos.sh https://raw.githubusercontent.com/thintsing/scripts/master/scripts/docker-delay-for-fnos.sh
+curl -fsSL -o /tmp/docker-delay-for-fnos.sh https://raw.githubusercontent.com/thintsing/scripts/master/scripts/docker/docker-delay-for-fnos.sh
 sudo bash /tmp/docker-delay-for-fnos.sh
 ```
 
 方式二（一行，用 `bash -c` 传入脚本文本，stdin 仍指向终端，菜单可交互）：
 
 ```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/thintsing/scripts/master/scripts/docker-delay-for-fnos.sh)"
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/thintsing/scripts/master/scripts/docker/docker-delay-for-fnos.sh)"
 ```
 
 使用 wget 时，把下载那一步替换为：
 
 ```bash
-wget -qO /tmp/docker-delay-for-fnos.sh https://raw.githubusercontent.com/thintsing/scripts/master/scripts/docker-delay-for-fnos.sh
+wget -qO /tmp/docker-delay-for-fnos.sh https://raw.githubusercontent.com/thintsing/scripts/master/scripts/docker/docker-delay-for-fnos.sh
 sudo bash /tmp/docker-delay-for-fnos.sh
 ```
 
