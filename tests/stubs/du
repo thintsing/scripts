@@ -1,0 +1,10 @@
+#!/bin/bash
+# du 桩：默认转给真实 du。STUB_DU_FAIL=1 时先吐出两行再以 1 退出，
+# 模拟 /var/log 里有读不到的子目录、或日志正在轮转导致文件中途消失——
+# 真实 Linux 上很常见，而 CI runner 的 /var/log 恰好就能触发。
+if [ "${STUB_DU_FAIL:-0}" = "1" ]; then
+    target="${*: -1}"
+    printf '2048\t%s/journal\n1024\t%s\n' "$target" "$target"
+    exit 1
+fi
+exec /usr/bin/du "$@"

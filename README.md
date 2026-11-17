@@ -115,7 +115,7 @@ scripts/
 docs/         需要长说明的脚本，按同样的分类目录放同名 .md
 tests/
   run.sh      桩测试入口：bash tests/run.sh
-  stubs/      docker / systemctl / journalctl / rsync / ss / id / truncate 的桩命令
+  stubs/      docker / systemctl / journalctl / rsync / ss / du / id / truncate 的桩命令
 .github/      CI：bash -n + 桩测试 + shellcheck
 ```
 
@@ -127,7 +127,9 @@ bash tests/run.sh
 
 不需要真的 Docker、systemd 或 rsync：全部走 `tests/stubs/` 里的桩命令，并把 `PATH` 收窄到一个只含必需工具的沙箱，这样「缺依赖」分支在 Windows(Git Bash) 和 Linux(CI runner 自带 docker、netstat) 上行为一致。
 
-覆盖的场景包括：正常路径、参数错误、缺依赖、非 root、**dry-run 不产生任何副作用**、以及几个已经踩过的回归坑（健康机器上 `sysinfo` 退出码变 1、老版本 Docker 缺 `builder prune` 时清理半路掐断、`--size`/`--time` 同时给被静默丢掉一个）。
+覆盖的场景包括：正常路径、参数错误、缺依赖、非 root、**dry-run 不产生任何副作用**、以及几个已经踩过的回归坑（健康机器上 `sysinfo` 退出码变 1、老版本 Docker 缺 `builder prune` 时清理半路掐断、`--size`/`--time` 同时给被静默丢掉一个、`/var/log` 里有读不到的子目录时 `du` 返回 1 把 `journal-trim` 掐断在收缩计划之前）。
+
+最后那条只在 Linux 上复现得出来——Git Bash 根本没有 `/var/log`。这就是为什么测试要进 CI，而不是只在开发机上跑绿就算完。
 
 仓库级检查也在里面：shebang、纯 LF 行尾、`bash -n`、git 执行位 `100755`、`--help` 可用、以及**每条脚本都必须出现在本 README 的索引里**。
 

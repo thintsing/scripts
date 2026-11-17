@@ -57,12 +57,15 @@ journalctl --disk-usage 2>&1 || echo "（读取 journal 占用失败）"
 echo
 echo "===== /var/log 下最占地方的条目 ====="
 if [ -d /var/log ]; then
+    # 末尾的 || true 不能省：du 碰到读不到的子目录、或日志正在轮转导致文件
+    # 中途消失时会返回 1，pipefail + set -e 会让脚本死在这里——列表打印了，
+    # 但后面的收缩计划一行都不输出。这只是个参考列表，不该有这种否决权。
     du -k -d 1 /var/log 2>/dev/null | sort -rn | head -n 10 | awk -F'\t' '
         { kb = $1 + 0
           if (kb >= 1048576)   h = sprintf("%7.1f G", kb/1048576)
           else if (kb >= 1024) h = sprintf("%7.1f M", kb/1024)
           else                 h = sprintf("%7.0f K", kb)
-          printf "%s  %s\n", h, $2 }'
+          printf "%s  %s\n", h, $2 }' || true
 else
     echo "（没有 /var/log 目录）"
 fi

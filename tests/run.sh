@@ -164,6 +164,21 @@ chk "--size/--time 互斥退出 2"  2 "$code"
 chk "互斥报错文本"              yes "$(has '互斥' "$out")"
 run_min scripts/system/journal-trim.sh
 chk "缺 journalctl 退出 1"      1 "$code"
+# CI 实测出来的回归：runner 的 /var/log 里有读不到的子目录，du 返回 1，
+# pipefail + set -e 曾让脚本死在列表之后、收缩计划之前。
+# Git Bash 没有 /var/log，这条分支进不去，只能交给 CI 覆盖。
+if [ -d /var/log ]; then
+    reset_log
+    run_env STUB_DU_FAIL=1 scripts/system/journal-trim.sh
+    chk "du 失败仍退出 0"           0 "$code"
+    chk "du 失败仍给出收缩计划"     yes "$(has '--vacuum-size=200M' "$out")"
+    chk "du 失败仍列出已有条目"     yes "$(has '/var/log/journal' "$out")"
+    reset_log
+    run_env STUB_DU_FAIL=1 scripts/system/journal-trim.sh --time 7d --apply
+    chk "du 失败不挡住 vacuum 执行" 1 "$(calls '--vacuum-time=7d')"
+else
+    skipped "du 失败回归（本机没有 /var/log，由 CI 覆盖）"
+fi
 
 echo
 echo "=========== ports ==========="
@@ -195,6 +210,9 @@ run_stub scripts/system/disk-top.sh -d abc
 chk "-d 非整数退出 2"  2 "$code"
 run_stub scripts/system/disk-top.sh -n
 chk "-n 缺参数退出 2"  2 "$code"
+run_env STUB_DU_FAIL=1 scripts/system/disk-top.sh "$WORK/data"
+chk "du 部分失败仍退出 0"   0 "$code"
+chk "du 部分失败仍列出条目" yes "$(has "$WORK/data/journal" "$out")"
 
 echo
 echo "=========== rsync-snapshot ==========="
