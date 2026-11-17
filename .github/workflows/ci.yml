@@ -11,30 +11,25 @@ permissions:
 
 jobs:
   check:
-    name: 静态检查 + 桩测试
+    name: 语法 + 桩测试 + shellcheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 收集待检文件
-        id: files
         run: |
           git ls-files -- '*.sh' 'tests/stubs/*' > /tmp/files.txt
-          echo "count=$(wc -l < /tmp/files.txt)" >> "$GITHUB_OUTPUT"
           cat /tmp/files.txt
 
       - name: bash -n 语法检查
         run: xargs -a /tmp/files.txt -r bash -n
 
-      - name: shellcheck（warning 及以上，闸门）
-        run: |
-          shellcheck --version
-          xargs -a /tmp/files.txt -r shellcheck -s bash -S warning
-
-      - name: shellcheck（style/info，仅报告不拦截）
-        continue-on-error: true
-        run: xargs -a /tmp/files.txt -r shellcheck -s bash -S style -f gcc
-
       - name: 桩测试（含行尾/执行位/README 索引覆盖率）
         run: bash tests/run.sh
+
+      # 放在最后：前面几步先跑完，一次 CI 就能同时看到测试结果和全部 lint findings
+      - name: shellcheck
+        run: |
+          shellcheck --version
+          xargs -a /tmp/files.txt -r shellcheck -s bash

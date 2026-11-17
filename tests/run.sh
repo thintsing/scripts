@@ -57,7 +57,8 @@ run_min()  { out=$(PATH="$MIN" "$BASH_BIN" "$@" 2>&1); code=$?; }
 # 赋值前缀会残留到后续调用，把后面的测试全污染掉。
 # 这里用子 shell 里的 export 而不是 env(1)：有些机器 ~/.local/bin/env 是
 # 一个只改 PATH 的安装器脚本，会把它后面的命令整个吞掉。
-run_env()  { local e="$1"; shift; out=$(export "$e"; PATH="$STUBS:$PATH" "$BASH_BIN" "$@" 2>&1); code=$?; }
+# ${e?} 是刻意的：要 export 的是「名=值」这个字符串本身，不是变量 e（SC2163）。
+run_env()  { local e="$1"; shift; out=$(export "${e?}"; PATH="$STUBS:$PATH" "$BASH_BIN" "$@" 2>&1); code=$?; }
 reset_log() { : > "$STUB_LOG"; }
 calls() { grep -c -e "$1" "$STUB_LOG" 2>/dev/null || true; }
 
