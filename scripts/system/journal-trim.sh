@@ -34,6 +34,11 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+if [ -n "$size" ] && [ -n "$keep_time" ]; then
+    echo "--size 与 --time 互斥，只能给一个（同时给会静默丢掉其中一个）" >&2
+    exit 2
+fi
+
 [ "$(id -u)" -eq 0 ] || { echo "需要 root 权限运行" >&2; exit 1; }
 command -v journalctl >/dev/null 2>&1 || { echo "未找到 journalctl，这台机器可能不是 systemd 系统" >&2; exit 1; }
 
@@ -47,7 +52,7 @@ journalctl --disk-usage 2>&1 || echo "（读取 journal 占用失败）"
 echo
 echo "===== /var/log 下最占地方的条目 ====="
 if [ -d /var/log ]; then
-    du -k --max-depth=1 /var/log 2>/dev/null | sort -rn | head -n 10 | awk -F'\t' '
+    du -k -d 1 /var/log 2>/dev/null | sort -rn | head -n 10 | awk -F'\t' '
         { kb = $1 + 0
           if (kb >= 1048576)   h = sprintf("%7.1f G", kb/1048576)
           else if (kb >= 1024) h = sprintf("%7.1f M", kb/1024)

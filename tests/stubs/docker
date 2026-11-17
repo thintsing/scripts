@@ -1,0 +1,65 @@
+#!/bin/bash
+# docker CLI 测试桩。所有调用记录到 $STUB_LOG。
+# 场景开关：STUB_BUILDER_FAIL=1 让 builder prune 失败（模拟老版本 Docker）。
+printf 'docker %s\n' "$*" >> "${STUB_LOG:-/dev/null}"
+
+cmd="$1"
+sub="${2:-}"
+
+case "$cmd" in
+    info)
+        exit 0 ;;
+    --version)
+        echo "Docker version 24.0.7, build stub" ;;
+    system)
+        printf 'TYPE\tTOTAL\tACTIVE\tSIZE\tRECLAIMABLE\nIMAGES\t5\t3\t2.1GB\t512MB\n' ;;
+    ps)
+        case "$sub" in
+            -aq) printf 'c1\nc2\n' ;;
+            -q)  printf 'c1\n' ;;
+        esac ;;
+    images)
+        printf 'imgA\nimgB\n' ;;
+    network)
+        case "$sub" in
+            ls)
+                printf 'n1\nn2\n' ;;
+            inspect)
+                # n1 没有容器连着、n2 有 2 个 → 「未使用网络」应当是 1 而不是 2
+                case "${!#}" in
+                    n1) echo 0 ;;
+                    n2) echo 2 ;;
+                    *)  echo 0 ;;
+                esac ;;
+        esac ;;
+    inspect)
+        shift
+        fmt=""
+        ids=()
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --format|-f) fmt="$2"; shift 2 ;;
+                *) ids+=("$1"); shift ;;
+            esac
+        done
+        for id in "${ids[@]}"; do
+            # 注意匹配顺序：RestartPolicy.Name 里也含 ".Name"，必须先匹配它，
+            # 否则 restart 列会错位成容器名。
+            case "$fmt" in
+                *RestartPolicy.Name*)       echo "unless-stopped" ;;
+                *'.Name'*)                  echo "/$id" ;;
+                *'.Config.Image'*)          echo "nginx:1.25-$id" ;;
+                *'.State.Status'*)          echo "running" ;;
+                *'.LogPath'*)               echo "${FAKE_LOG_DIR:-/tmp}/$id.json" ;;
+                *'.Mounts'*)                echo "/vol1/data=>/data; /etc/localtime=>/etc/localtime; " ;;
+                *'NetworkSettings.Ports'*)  echo "80/tcp=>8080; 443/tcp=>8443; " ;;
+                *)                          echo "" ;;
+            esac
+        done ;;
+    container|image|builder)
+        if [ "$cmd" = "builder" ] && [ "$sub" = "prune" ] && [ "${STUB_BUILDER_FAIL:-0}" = "1" ]; then
+            echo 'Error: unknown command "prune" for "docker builder"' >&2
+            exit 1
+        fi ;;
+esac
+exit 0

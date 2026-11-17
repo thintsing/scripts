@@ -1,0 +1,11 @@
+#!/bin/bash
+# journalctl 测试桩。
+printf 'journalctl %s\n' "$*" >> "${STUB_LOG:-/dev/null}"
+
+case "$1" in
+    --disk-usage)
+        echo "Archived and active journals take up 180.0M in the file system." ;;
+    --vacuum-size|--vacuum-time)
+        echo "Vacuuming done: $*" ;;
+esac
+exit 0

@@ -1,0 +1,10 @@
+#!/bin/bash
+# truncate 测试桩：记录调用，并真的把目标文件清空，
+# 这样除了「有没有调用」还能断言「文件是否真的变成 0 字节」。
+printf 'truncate %s\n' "$*" >> "${STUB_LOG:-/dev/null}"
+
+target="${!#}"
+if [ -f "$target" ]; then
+    : > "$target"
+fi
+exit 0

@@ -533,6 +533,26 @@ fi
 }
 
 
+case "${1:-}" in
+    -h|--help)
+        cat <<'USAGE'
+用法: sudo bash docker-delay-for-fnos.sh
+
+交互式菜单，需要 root。运行后按提示操作：
+  1 创建延迟启动服务   选容器与顺序、等待秒数、间隔秒数，确认后生成
+                       start_docker.sh 并可注册 start_docker.service
+  2 删除延迟启动服务   同时清理生成的启动脚本
+  3 查看启动日志       /var/log/start_docker.log 最近 100 行
+  4 查看当前配置       列出计划开机启动的容器顺序
+  5 退出
+
+容器编号支持：单个 1 3 5、区间 1-5、全选 a（或 * / all），自动去重。
+依赖：docker、systemctl、bash 4.0+。详见 docs/docker/docker-delay-for-fnos.md
+USAGE
+        exit 0
+        ;;
+esac
+
 check_root
 
 main_menu

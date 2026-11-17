@@ -31,7 +31,7 @@ while [ $# -gt 0 ]; do
             [ $# -ge 2 ] || { echo "$1 需要一个参数" >&2; exit 2; }
             val="$2"
             case "$val" in ''|*[!0-9]*) echo "$1 需为正整数，收到: $val" >&2; exit 2 ;; esac
-            [ "$1" = "-d" ] && depth="$val" || top="$val"
+            if [ "$1" = "-d" ]; then depth="$val"; else top="$val"; fi
             shift 2 ;;
         -f) du_args+=("-a"); shift ;;
         -x) du_args+=("-x"); shift ;;

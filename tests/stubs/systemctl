@@ -1,0 +1,13 @@
+#!/bin/bash
+# systemctl 测试桩。STUB_FAILED_UNITS=1 模拟存在失败单元，否则模拟健康机器。
+# 这个桩是必需的：没有它，sysinfo.sh 在「有 systemctl 且无失败单元」时
+# 退出码为 1 的 bug 根本测不出来（开发机上往往没装 systemctl）。
+printf 'systemctl %s\n' "$*" >> "${STUB_LOG:-/dev/null}"
+
+case "$*" in
+    *--failed*)
+        if [ "${STUB_FAILED_UNITS:-0}" = "1" ]; then
+            echo "  nginx.service loaded failed failed nginx"
+        fi ;;
+esac
+exit 0

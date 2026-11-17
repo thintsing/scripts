@@ -1,0 +1,8 @@
+#!/bin/bash
+# id 测试桩：-u 返回 $STUB_UID（默认 0，即 root），其余参数转给真实 id。
+# 需要测「非 root 时应当拒绝执行」的场景就把 STUB_UID 设成 1000。
+if [ "${1:-}" = "-u" ]; then
+    echo "${STUB_UID:-0}"
+else
+    /usr/bin/id "$@"
+fi

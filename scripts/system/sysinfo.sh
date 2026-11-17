@@ -4,7 +4,25 @@ set -euo pipefail
 # 主机概览：系统、内核、运行时间、负载、CPU、内存、磁盘、Docker 版本。
 # 只读，不改动任何东西。适合 SSH 上去先跑一把看看机器状态。
 
-field() { [ -n "$1" ] && echo "$1" || echo "-"; }
+usage() {
+    cat <<'USAGE'
+用法: sysinfo.sh
+
+只读地打印主机概览：发行版/内核、运行时间与负载、CPU、内存、磁盘占用、
+Docker 版本与容器数、systemd 失败单元。磁盘占用 >=70% 的行会标 ▲。
+不需要 root，但非 root 时部分信息（如 Docker 容器数）可能取不到。
+USAGE
+}
+
+case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+    "") ;;
+    *) echo "未知参数: $1" >&2; usage >&2; exit 2 ;;
+esac
+
+field() {
+    if [ -n "$1" ]; then echo "$1"; else echo "-"; fi
+}
 
 echo "===== 主机 ====="
 echo "主机名:   $(hostname 2>/dev/null || field "")"
@@ -64,5 +82,9 @@ fi
 if command -v systemctl >/dev/null 2>&1; then
     failed=$(systemctl --failed --no-legend --no-pager 2>/dev/null | grep -c . || true)
     echo "失败单元: ${failed:-0} 个"
-    [ "${failed:-0}" -gt 0 ] && systemctl --failed --no-pager | head -n 10
+    # 这里必须用 if：写成 `[ ... ] && cmd` 时，条件为假会让整个 AND 列表返回 1，
+    # 而它是脚本最后一条命令，于是一台健康机器的退出码会变成 1。
+    if [ "${failed:-0}" -gt 0 ]; then
+        systemctl --failed --no-pager | head -n 10
+    fi
 fi

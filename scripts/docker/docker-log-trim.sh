@@ -7,9 +7,10 @@ set -euo pipefail
 
 usage() {
     cat <<'USAGE'
-用法: docker-log-trim.sh [--over MB] [--apply]
+用法: docker-log-trim.sh [--over MB] [--all] [--apply]
 
   --over MB   只处理大于该体积的日志，默认 100
+  --all       连已停止的容器一起算（它们的日志同样躺在盘上占空间）
   --apply     真正执行 truncate -s 0，否则只列出
 
 更省心的做法是让 Docker 自己轮转，而不是靠手动清：在 compose 里给服务加
@@ -20,11 +21,13 @@ USAGE
 
 over_mb=100
 apply=0
+all=0
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         --over) [ $# -ge 2 ] || { echo "--over 需要一个数字" >&2; exit 2; }
                 over_mb="$2"; shift 2 ;;
+        --all) all=1; shift ;;
         --apply) apply=1; shift ;;
         *) echo "未知参数: $1" >&2; usage >&2; exit 2 ;;
     esac
@@ -42,11 +45,19 @@ threshold=$((over_mb * 1024 * 1024))
 total_over=0
 hits=0
 
+if [ "$all" -eq 1 ]; then
+    ps_args=(-aq)
+    scope="全部容器"
+else
+    ps_args=(-q)
+    scope="运行中的容器"
+fi
+
 while IFS= read -r id; do
     [ -n "$id" ] || continue
     name=$(docker inspect --format '{{.Name}}' "$id" | sed 's|^/||')
     logpath=$(docker inspect --format '{{.LogPath}}' "$id")
-    [ -n "$logpath" ] && [ -f "$logpath" ] || continue
+    [ -f "$logpath" ] || continue
 
     size=$(stat -c %s "$logpath")
     if [ "$size" -ge "$threshold" ]; then
@@ -58,11 +69,11 @@ while IFS= read -r id; do
             echo "    -> 已清空 $logpath"
         fi
     fi
-done < <(docker ps -q)
+done < <(docker ps "${ps_args[@]}")
 
 mb_total=$(awk -v n="$total_over" 'BEGIN{printf "%.1f", n/1048576}')
 echo
-echo "运行中的容器里，超过 ${over_mb} MB 的日志: ${hits} 个，合计 ${mb_total} MB"
+echo "$scope 里，超过 ${over_mb} MB 的日志: ${hits} 个，合计 ${mb_total} MB"
 if [ "$apply" -eq 0 ]; then
     echo "dry-run：未清空任何文件。确认后加 --apply。"
 else

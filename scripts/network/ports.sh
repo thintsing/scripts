@@ -17,6 +17,7 @@ USAGE
 
 case "${1:-}" in
     -h|--help) usage; exit 0 ;;
+    -*) echo "未知参数: $1" >&2; usage >&2; exit 2 ;;
 esac
 
 filter="${1:-}"

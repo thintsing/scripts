@@ -1,0 +1,20 @@
+#!/bin/bash
+# rsync 测试桩：识别 -n/--dry-run，非 dry-run 时真的建出目标目录并放一个文件，
+# 这样「dry-run 不产生副作用」和「--apply 真的落盘」都能被断言。
+printf 'rsync %s\n' "$*" >> "${STUB_LOG:-/dev/null}"
+
+dry=0
+dest=""
+for a in "$@"; do
+    case "$a" in
+        -n|--dry-run) dry=1 ;;
+        -a|-h|-v|--stats|--link-dest=*) ;;
+        *) dest="$a" ;;
+    esac
+done
+
+if [ "$dry" -eq 0 ] && [ -n "$dest" ]; then
+    mkdir -p "$dest" && echo data > "$dest/payload.txt"
+fi
+echo "Number of files: 42"
+exit 0
