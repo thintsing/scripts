@@ -1,8 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# 导出所有 Docker 容器的清单（名称/镜像/状态/重启策略/挂载/端口映射），TSV 格式。
-# 重装系统或挪机器之前先跑一遍，手里就有一份「这台机器上到底跑了些什么」的记录。
+# 用途: 导出容器清单 TSV（名称/镜像/状态/重启策略/挂载/端口），重装系统前留档
+# 依赖: docker；可选 column（缺失时退回纯 TSV）
+# 权限: root 或 docker 组
+# 退出: 0 成功 / 1 docker 不可用 / 2 参数错误
+# 示例: bash docker-inventory.sh -o ~/containers.tsv
+
 # 刻意不导出容器环境变量：里面通常是数据库密码和 API key，不该落到一个存档文件里。
 
 usage() {

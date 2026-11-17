@@ -1,8 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-# systemd journal 日志占用查看与收缩。默认 dry-run，只显示会执行什么；加 --apply 才收缩。
-# 需要 root。
+# 用途: 查看 systemd journal 占用，并按大小或时长收缩
+# 依赖: journalctl（systemd）、du
+# 权限: root
+# 退出: 0 成功 / 1 非 root 或缺 journalctl / 2 参数错误
+# 示例: sudo bash journal-trim.sh --size 200M --apply
+
+# 默认 dry-run，只显示会执行什么；加 --apply 才收缩。
 
 usage() {
     cat <<'USAGE'

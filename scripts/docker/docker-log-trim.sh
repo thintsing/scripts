@@ -1,9 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# 查看 / 清空 Docker 容器的 json 日志文件。
+# 用途: 找出并清空撑爆磁盘的容器 json-file 日志
+# 依赖: docker、stat、truncate、awk（coreutils）
+# 权限: root
+# 退出: 0 成功 / 1 非 root 或 docker 不可用 / 2 参数错误
+# 示例: sudo bash docker-log-trim.sh --over 100 --all --apply
+
 # json-file 驱动默认不限制日志大小，长期运行的容器能把系统盘撑爆。
-# 默认 dry-run 只列出超过阈值的日志；--apply 用 truncate 清零。需要 root。
+# 默认 dry-run 只列出超过阈值的日志；--apply 用 truncate -s 0 清零。
 
 usage() {
     cat <<'USAGE'

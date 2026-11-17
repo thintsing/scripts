@@ -1,8 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# Docker 无用数据清理。默认 dry-run 只报告，加 --apply 才真正删除。
-# 依赖：docker CLI + 守护进程可用（当前用户能访问 docker.sock）。
+# 用途: 清理已停止容器、悬空镜像、未使用自定义网络、构建缓存
+# 依赖: docker CLI，且当前用户能访问 docker.sock
+# 权限: root 或 docker 组
+# 退出: 0 成功 / 1 docker 不可用或有清理步骤未完成 / 2 参数错误
+# 示例: bash docker-cleanup.sh --apply
+
+# 默认 dry-run 只报告，加 --apply 才真正删除。
+# --apply 会删掉 exited 状态的容器：靠 stop 保留数据、以后还要 start 的别直接加。
 
 usage() {
     cat <<'USAGE'

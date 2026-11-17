@@ -1,8 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-# 找出某个路径下最占空间的东西，用来回答「磁盘怎么就满了」。只读，不改任何东西。
-# 用 du -k + 数值排序，不依赖 GNU 专属的 sort -h；du -d 在 GNU 和 busybox 上都能用。
+# 用途: 找出某路径下最占空间的目录/文件，回答「磁盘怎么满了」
+# 依赖: du、sort、awk（GNU 或 busybox 均可）
+# 权限: 普通用户即可；读不到的子目录会让结果偏小
+# 退出: 0 成功 / 1 路径不存在 / 2 参数错误
+# 示例: bash disk-top.sh /vol1 -d 2 -n 15
+
+# 只读。用 du -k + 数值排序，不依赖 GNU 专属的 sort -h；du -d 在 GNU 和 busybox 上都能用。
 
 usage() {
     cat <<'USAGE'

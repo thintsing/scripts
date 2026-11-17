@@ -5,6 +5,11 @@ set -uo pipefail
 # FNOS Docker 延迟启动管理脚本
 # Version: 2.2
 #############################################
+# 用途: FNOS 开机后按顺序、隔指定秒数逐个启动容器，交互式注册 systemd 服务
+# 依赖: docker、systemctl（systemd）、bash
+# 权限: root
+# 退出: 0 成功 / 1 非 root 或依赖缺失
+# 示例: sudo bash docker-delay-for-fnos.sh
 
 SCRIPT_DIR_DEFAULT="/vol1/1000/config"
 SERVICE_NAME="start_docker.service"

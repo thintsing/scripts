@@ -1,8 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-# 主机概览：系统、内核、运行时间、负载、CPU、内存、磁盘、Docker 版本。
-# 只读，不改动任何东西。适合 SSH 上去先跑一把看看机器状态。
+# 用途: 主机概览：发行版/内核、运行时间与负载、CPU、内存、磁盘、Docker、失败单元
+# 依赖: 无必需；有 free / docker / systemctl 时信息更全
+# 权限: 普通用户即可
+# 退出: 0 成功 / 2 参数错误
+# 示例: bash sysinfo.sh
+
+# 只读。适合 SSH 上去先跑一把看看机器状态；磁盘占用 >=70% 的行会标 ▲。
 
 usage() {
     cat <<'USAGE'

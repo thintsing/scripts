@@ -1,9 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# 用 rsync --link-dest 做「每次一个完整快照、未变文件共享数据块」的备份。
-# 最常用的一条：把配置目录或数据目录按时间戳存起来，只保留最近 N 份。
+# 用途: 用 rsync --link-dest 做时间戳快照，未变文件共享数据块，保留最近 N 份
+# 依赖: rsync、find、date（coreutils / findutils）
+# 权限: 对 SRC 可读、对 DEST 可写；不需要 root
+# 退出: 0 成功 / 1 缺 rsync、SRC 不是目录、rsync 失败 / 2 参数错误
+# 示例: bash rsync-snapshot.sh --apply -k 7 /vol1/1000/config /vol1/backup/config
+
 # 默认 dry-run（只告诉你会同步哪些文件），加 --apply 才真的写。
+# 删旧快照只是断开硬链接，不会动到 SRC 的数据。
 
 usage() {
     cat <<'USAGE'
