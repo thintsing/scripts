@@ -60,7 +60,7 @@ main_menu(){
         echo "4. 查看当前配置"
         echo "5. 退出"
 
-        read -p "请选择: " choice
+        read -r -p "请选择: " choice
 
         case "$choice" in
             1) create_service ;;
@@ -72,7 +72,7 @@ main_menu(){
         esac
 
         echo
-        read -p "按回车键返回主菜单..." _ || true
+        read -r -p "按回车键返回主菜单..." _ || true
     done
 }
 
@@ -91,7 +91,7 @@ if ! check_docker; then
 fi
 
 
-read -p "脚本保存目录(默认 $SCRIPT_DIR_DEFAULT): " script_path
+read -r -p "脚本保存目录(默认 $SCRIPT_DIR_DEFAULT): " script_path
 
 script_path=${script_path:-$SCRIPT_DIR_DEFAULT}
 
@@ -128,7 +128,7 @@ done
 echo
 echo "输入启动顺序编号(例如 1 3 5；支持区间 1-5；输入 a 选择全部):"
 
-read -p "请选择: " select_ids
+read -r -p "请选择: " select_ids
 
 
 selected=()
@@ -220,7 +220,7 @@ echo "已忽略无效或越界的编号"
 fi
 
 
-read -p "系统启动后等待多少秒启动第一个容器(默认60): " first_delay
+read -r -p "系统启动后等待多少秒启动第一个容器(默认60): " first_delay
 
 first_delay=${first_delay:-60}
 
@@ -230,7 +230,7 @@ if ! is_nonneg_int "$first_delay"; then
 fi
 
 
-read -p "容器之间间隔秒数(默认10): " interval
+read -r -p "容器之间间隔秒数(默认10): " interval
 
 interval=${interval:-10}
 
@@ -243,7 +243,7 @@ fi
 script_file="$script_path/start_docker.sh"
 
 if [ -f "$script_file" ]; then
-    read -p "启动脚本已存在，是否覆盖?(y/n): " ow
+    read -r -p "启动脚本已存在，是否覆盖?(y/n): " ow
     if [[ "$ow" != "y" && "$ow" != "Y" ]]; then
         echo "已取消"
         return
@@ -264,7 +264,7 @@ do
 echo "  $((i+1)). ${selected[$i]}"
 done
 
-read -p "确认生成并创建?(y/n): " confirm
+read -r -p "确认生成并创建?(y/n): " confirm
 
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     echo "已取消"
@@ -364,14 +364,14 @@ echo "启动脚本生成:"
 echo "$script_file"
 
 
-read -p "是否创建systemd服务?(y/n): " yn
+read -r -p "是否创建systemd服务?(y/n): " yn
 
 
 if [[ "$yn" == "y" || "$yn" == "Y" ]]
 then
 
 if [ -f "/etc/systemd/system/$SERVICE_NAME" ]; then
-    read -p "systemd 服务已存在，是否覆盖?(y/n): " ow2
+    read -r -p "systemd 服务已存在，是否覆盖?(y/n): " ow2
     if [[ "$ow2" != "y" && "$ow2" != "Y" ]]; then
         echo "已取消服务创建（脚本已生成）"
         return
@@ -434,7 +434,7 @@ if systemctl list-unit-files | grep -q "$SERVICE_NAME"
 then
 
 
-read -p "确认删除?(y/n): " c
+read -r -p "确认删除?(y/n): " c
 
 if [[ "$c" == "y" || "$c" == "Y" ]]
 then
@@ -523,7 +523,7 @@ if [ -n "$gen_script" ] && [ -f "$gen_script" ]; then
 
 grep -o 'docker start "[^"]*"' "$gen_script" 2>/dev/null | sed 's/docker start "\(.*\)"/\1/' | nl
 
-if [ -z "$(grep -o 'docker start "[^"]*"' "$gen_script" 2>/dev/null)" ]; then
+if ! grep -q 'docker start "[^"]*"' "$gen_script" 2>/dev/null; then
 
 grep -o 'docker start [^ ]*' "$gen_script" 2>/dev/null | sed 's/docker start //' | nl
 
